@@ -301,12 +301,53 @@ Class::IOResult Class::set_inherit(const FileHandle& fh, bool inherit)
 // Function perform reading from the file: it may read up to `count' bytes to `buf'.
 Class::IOResult Class::read(const FileHandle& fh, void *buf, size_t count)
 {
+    //DWORD dwRead = 0;
+    //OVERLAPPED ov = {};
+    //if (! ReadFile(fh.handle, buf, (DWORD)count, &dwRead, &ov))
+        //return { (GetLastError() == ERROR_IO_PENDING ? IOResult::Pending : IOResult::Error), dwRead };
+    //else
+        //return { (dwRead == 0 ? IOResult::Eof : IOResult::Success), dwRead };
+
     DWORD dwRead = 0;
     OVERLAPPED ov = {};
-    if (! ReadFile(fh.handle, buf, (DWORD)count, &dwRead, &ov))
-        return { (GetLastError() == ERROR_IO_PENDING ? IOResult::Pending : IOResult::Error), dwRead };
+    ov.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+    if (!ReadFile(fh.handle, buf, (DWORD)count, 0, &ov))
+    {
+        if (GetLastError() == ERROR_IO_PENDING)
+        {
+            WaitForSingleObject(ov.hEvent, INFINITE);
+
+            CloseHandle(ov.hEvent);
+
+            if (GetOverlappedResult(fh.handle, &ov, &dwRead, TRUE))
+            {
+                DWORD err = GetLastError();
+                if (err == ERROR_IO_PENDING
+                    || err == WAIT_TIMEOUT
+                    || err == ERROR_IO_INCOMPLETE)
+                {
+                    return { dwRead == 0 ? IOResult::Pending : IOResult::Success, dwRead };
+                }
+                else
+                    return { (dwRead == 0 ? IOResult::Eof : IOResult::Success), dwRead };
+            }
+            else
+            {
+                DWORD error = GetLastError();
+
+                return { (error == ERROR_IO_PENDING || error == ERROR_IO_INCOMPLETE || error == WAIT_TIMEOUT ? IOResult::Pending : IOResult::Error), dwRead };
+            }
+        }
+        else
+        {
+            return { IOResult::Eof, dwRead };
+        }
+    }
     else
-        return { (dwRead == 0 ? IOResult::Eof : IOResult::Success), dwRead };
+    {
+        return { (ov.InternalHigh == 0 ? IOResult::Eof : IOResult::Success), ov.InternalHigh };
+    }
 }
 
 
