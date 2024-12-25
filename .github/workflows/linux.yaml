@@ -18,4 +18,3 @@ jobs:
         build-dir: ./build
         options: CMAKE_BUILD_TYPE=Release
         build-args:  --config Release --target install
-        args: -A x64
