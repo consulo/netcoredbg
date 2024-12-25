@@ -23,5 +23,5 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: netcoredb64
-        path: /home/runner/build/
+        path: ~/build/
         if-no-files-found: error
