@@ -1,0 +1,27 @@
+name: macOS ARM64
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+env:
+  CC: /usr/bin/clang
+  CXX: /usr/bin/clang++
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: threeal/cmake-action@main
+      with:
+        generator: Unix Makefiles
+        source-dir: .
+        build-dir: ./build
+        options: CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=~/build/ CMAKE_OSX_ARCHITECTURES=arm64
+        build-args:  --config Release --target install
+    - uses: actions/upload-artifact@v4
+      with:
+        name: netcoredb-aarch64
+        path: ~/build/
+        if-no-files-found: error
