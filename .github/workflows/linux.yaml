@@ -20,3 +20,8 @@ jobs:
         build-dir: ./build
         options: CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=~/build/
         build-args:  --config Release --target install
+    - uses: actions/upload-artifact@v4
+      with:
+        name: netcoredb64
+        path: /home/runner/build/
+        if-no-files-found: error
