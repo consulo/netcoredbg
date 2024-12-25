@@ -18,5 +18,5 @@ jobs:
         generator: Unix Makefiles
         source-dir: .
         build-dir: ./build
-        options: CMAKE_BUILD_TYPE=Release
+        options: CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=~/build/
         build-args:  --config Release --target install
