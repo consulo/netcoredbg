@@ -198,6 +198,17 @@ void VSCodeProtocol::EmitStoppedEvent(const StoppedEvent &event)
 
     // body["source"] = event.frame.source;
 
+    switch (event.reason)
+    {
+        case StopBreakpoint:
+        {
+            json arr = json::array();
+            arr.push_back((unsigned int)event.breakpoint.id);
+            body["hitBreakpointIds"] = arr;
+            break;
+        }
+    }
+
     EmitEvent("stopped", body);
 }
 
