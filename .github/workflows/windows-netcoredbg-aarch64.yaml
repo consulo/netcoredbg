@@ -1,0 +1,26 @@
+name: windows-netcoredbg-aarch64
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v4
+    - uses: threeal/cmake-action@main
+      with:
+        generator: Visual Studio 17 2022
+        source-dir: .
+        build-dir: ./build
+        options: CMAKE_BUILD_TYPE=Release
+        build-args:  --config Release --target install
+        args: -A ARM64
+    - uses: actions/upload-artifact@v4
+      with:
+        name: windows-netcoredbg-aarch64
+        path: C:/Program Files/netcoredbg
+        if-no-files-found: error
