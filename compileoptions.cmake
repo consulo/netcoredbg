@@ -62,6 +62,14 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-Wno-incompatible-ms-struct)
     add_compile_options(-Walign-cast)
   endif()
+
+  # GCC-specific flags
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Headers use extra qualification inside class bodies (e.g. `HRESULT Evaluator::foo(...)`
+    # inside the Evaluator class). Clang accepts this silently; gcc rejects it as an error
+    # unless we downgrade with -fpermissive.
+    add_compile_options(-fpermissive)
+  endif()
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 
