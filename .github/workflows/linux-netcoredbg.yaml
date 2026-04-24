@@ -13,35 +13,29 @@ jobs:
       matrix:
         include:
           - arch: x86_64
-            cc: /usr/bin/clang
-            cxx: /usr/bin/clang++
+            triple: x86_64-linux-gnu
             cmake_processor: x86_64
             elf_machine: Advanced Micro Devices X86-64
             runs_on: ubuntu-latest
           - arch: loongarch64
-            cc: loongarch64-linux-gnu-gcc
-            cxx: loongarch64-linux-gnu-g++
+            triple: loongarch64-linux-gnu
             cmake_processor: loongarch64
             elf_machine: LoongArch
             apt: g++-loongarch64-linux-gnu
             runs_on: ubuntu-latest
           - arch: riscv64
-            cc: riscv64-linux-gnu-gcc
-            cxx: riscv64-linux-gnu-g++
+            triple: riscv64-linux-gnu
             cmake_processor: riscv64
             elf_machine: RISC-V
             apt: g++-riscv64-linux-gnu
             runs_on: ubuntu-latest
 
     runs-on: ${{ matrix.runs_on }}
-    env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install cross compiler
+      - name: Install cross toolchain
         if: matrix.apt
         run: |
           sudo apt-get update
@@ -52,7 +46,7 @@ jobs:
           generator: Unix Makefiles
           source-dir: .
           build-dir: ./build
-          options: CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=./install CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=${{ matrix.cmake_processor }} CMAKE_C_COMPILER=${{ matrix.cc }} CMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          options: CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=./install CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=${{ matrix.cmake_processor }} CMAKE_C_COMPILER=/usr/bin/clang CMAKE_CXX_COMPILER=/usr/bin/clang++ CMAKE_C_COMPILER_TARGET=${{ matrix.triple }} CMAKE_CXX_COMPILER_TARGET=${{ matrix.triple }}
           build-args: --config Release --target install
 
       - name: Verify ELF architecture
