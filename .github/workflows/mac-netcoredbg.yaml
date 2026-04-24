@@ -19,7 +19,7 @@ jobs:
           - arch: x86_64
             macho_arch: x86_64
             osx_arch: x86_64
-            runs_on: macos-13
+            runs_on: macos-latest
           - arch: aarch64
             macho_arch: arm64
             osx_arch: arm64
