@@ -13,24 +13,22 @@ jobs:
       matrix:
         include:
           - arch: x86_64
-            cc: /usr/bin/clang
-            cxx: /usr/bin/clang++
+            triple: x86_64-linux-gnu
             cmake_processor: x86_64
             elf_machine: Advanced Micro Devices X86-64
             runs_on: ubuntu-latest
             cross: false
           - arch: loongarch64
-            cc: loongarch64-unknown-linux-gnu-gcc
-            cxx: loongarch64-unknown-linux-gnu-g++
+            triple: loongarch64-unknown-linux-gnu
             cmake_processor: loongarch64
             elf_machine: LoongArch
             dbgshim_url: https://github.com/loongson-community/dotnet-unofficial-build/releases/download/v9.0.201%2Bloong.20250313.build.20250313/dotnet-sdk-9.0.104-linux-loongarch64.tar.gz
             loongson: true
+            extra_c_flags: --gcc-toolchain=/opt/loongson --sysroot=/opt/loongson/loongarch64-unknown-linux-gnu/sysroot
             runs_on: ubuntu-latest
             cross: true
           - arch: riscv64
-            cc: riscv64-linux-gnu-gcc
-            cxx: riscv64-linux-gnu-g++
+            triple: riscv64-linux-gnu
             cmake_processor: riscv64
             elf_machine: RISC-V
             dbgshim_url: https://github.com/filipnavara/dotnet-riscv/releases/download/10.0.105/dotnet-sdk-10.0.105-linux-riscv64.tar.gz
@@ -63,7 +61,7 @@ jobs:
           generator: Unix Makefiles
           source-dir: .
           build-dir: ./build
-          options: CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=./install CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=${{ matrix.cmake_processor }} CMAKE_C_COMPILER=${{ matrix.cc }} CMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          options: CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=./install CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=${{ matrix.cmake_processor }} CMAKE_C_COMPILER=/usr/bin/clang CMAKE_CXX_COMPILER=/usr/bin/clang++ CMAKE_C_COMPILER_TARGET=${{ matrix.triple }} CMAKE_CXX_COMPILER_TARGET=${{ matrix.triple }} CMAKE_C_FLAGS=${{ matrix.extra_c_flags }} CMAKE_CXX_FLAGS=${{ matrix.extra_c_flags }} CMAKE_EXE_LINKER_FLAGS=${{ matrix.extra_c_flags }} CMAKE_SHARED_LINKER_FLAGS=${{ matrix.extra_c_flags }}
           build-args: --config Release
 
       - name: Fetch libdbgshim for cross target
