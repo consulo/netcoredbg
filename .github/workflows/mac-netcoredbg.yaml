@@ -1,0 +1,106 @@
+name: mac-netcoredbg
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CC: /usr/bin/clang
+  CXX: /usr/bin/clang++
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            macho_arch: x86_64
+            osx_arch: x86_64
+            runs_on: macos-13
+          - arch: aarch64
+            macho_arch: arm64
+            osx_arch: arm64
+            runs_on: macos-latest
+
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: threeal/cmake-action@main
+        with:
+          generator: Unix Makefiles
+          source-dir: .
+          build-dir: ./build
+          options: CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=./install CMAKE_OSX_ARCHITECTURES=${{ matrix.osx_arch }}
+          build-args: --config Release --target install
+
+      - name: Verify Mach-O architecture
+        run: |
+          set -euo pipefail
+          BIN=$(find ./install -type f -name netcoredbg | head -1)
+          echo "File: $BIN"
+          lipo -archs "$BIN"
+          ARCHS=$(lipo -archs "$BIN")
+          if [ "$ARCHS" != "${{ matrix.macho_arch }}" ]; then
+              echo "::error::Mach-O arch mismatch. Expected '${{ matrix.macho_arch }}' for ${{ matrix.arch }}, got '$ARCHS'."
+              exit 1
+          fi
+          echo "OK: Mach-O arch is '$ARCHS' as expected."
+
+      - name: Package
+        run: |
+          cd install
+          zip -r "$GITHUB_WORKSPACE/netcoredbg.zip" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: netcoredbg-macos-${{ matrix.arch }}
+          path: netcoredbg.zip
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: binaries-publish
+      cancel-in-progress: false
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Arrange binaries by os-arch
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          for dir in artifacts/netcoredbg-macos-*/; do
+            name=$(basename "$dir")
+            arch="${name#netcoredbg-macos-}"
+            mkdir -p "out/macos-$arch"
+            cp "$dir"netcoredbg.zip "out/macos-$arch/"
+          done
+          find out -type f
+
+      - name: Commit and push to consulo/binaries
+        env:
+          CONSULO_BOT_TOKEN: ${{ secrets.CONSULO_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone "https://consulo-bot:${CONSULO_BOT_TOKEN}@github.com/consulo/binaries.git" binaries-repo
+          cd binaries-repo
+          git checkout master 2>/dev/null || git checkout --orphan master
+          git config user.name "consulo Bot"
+          git config user.email "consulo.bot@gmail.com"
+          cp -r ../out/. .
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update netcoredbg macos binaries from ${GITHUB_REPOSITORY}@${GITHUB_SHA::7}"
+            git push -u origin master
+          fi
