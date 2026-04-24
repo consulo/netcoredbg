@@ -27,37 +27,41 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   endif(CLR_CMAKE_PLATFORM_DARWIN)
 
   add_definitions(-DDISABLE_CONTRACTS)
-  # The -ferror-limit is helpful during the porting, it makes sure the compiler doesn't stop
-  # after hitting just about 20 errors.
-  add_compile_options(-ferror-limit=4096)
 
   if (CLR_CMAKE_WARNINGS_ARE_ERRORS)
     # All warnings that are not explicitly disabled are reported as errors
     add_compile_options(-Werror)
   endif(CLR_CMAKE_WARNINGS_ARE_ERRORS)
 
-  # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
-  add_compile_options(-Wno-microsoft)
-  # There are constants of type BOOL used in a condition. But BOOL is defined as int
-  # and so the compiler thinks that there is a mistake.
-  add_compile_options(-Wno-constant-logical-operand)
-  # We use pshpack1/2/4/8.h and poppack.h headers to set and restore packing. However
-  # clang 6.0 complains when the packing change lifetime is not contained within 
-  # a header file.
-  add_compile_options(-Wno-pragma-pack)
-
-  add_compile_options(-Wno-unknown-warning-option)
-
-  # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied
-  # to a struct or a class that has virtual members or a base class. In that case, clang
-  # may not generate the same object layout as MSVC.
-  add_compile_options(-Wno-incompatible-ms-struct)
-
   # Some architectures (e.g., ARM) assume char type is unsigned while CoreCLR assumes char is signed
   # as x64 does. It has been causing issues in ARM (https://github.com/dotnet/coreclr/issues/4746)
   add_compile_options(-fsigned-char)
 
-  add_compile_options(-Wall -Wextra -Walign-cast -Wstrict-aliasing -Wno-unused-parameter -Wnarrowing)
+  # Warnings accepted by both clang and gcc
+  add_compile_options(-Wall -Wextra -Wstrict-aliasing -Wno-unused-parameter -Wnarrowing)
+
+  # Clang-only flags (gcc does not recognize these)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # The -ferror-limit is helpful during the porting, it makes sure the compiler doesn't stop
+    # after hitting just about 20 errors.
+    add_compile_options(-ferror-limit=4096)
+    # Silence warnings about unknown warning options so -Wno-<clang-only> stays harmless.
+    add_compile_options(-Wno-unknown-warning-option)
+    # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
+    add_compile_options(-Wno-microsoft)
+    # There are constants of type BOOL used in a condition. But BOOL is defined as int
+    # and so the compiler thinks that there is a mistake.
+    add_compile_options(-Wno-constant-logical-operand)
+    # We use pshpack1/2/4/8.h and poppack.h headers to set and restore packing. However
+    # clang 6.0 complains when the packing change lifetime is not contained within
+    # a header file.
+    add_compile_options(-Wno-pragma-pack)
+    # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied
+    # to a struct or a class that has virtual members or a base class. In that case, clang
+    # may not generate the same object layout as MSVC.
+    add_compile_options(-Wno-incompatible-ms-struct)
+    add_compile_options(-Walign-cast)
+  endif()
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 
